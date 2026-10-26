@@ -1,0 +1,59 @@
+name: Outreach run
+
+# Run formscout submit on GitHub's servers — nothing to install locally.
+# One-time setup (repo Settings -> Secrets and variables -> Actions):
+#   OUTREACH_CONFIG  full contents of your outreach.yaml (identity + message)
+#   LEADS_CSV        full contents of your leads.csv (name,website,postcode)
+# Then: Actions tab -> "Outreach run" -> Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode (dry-run fills forms but never submits)"
+        type: choice
+        options:
+          - dry-run
+          - live
+        default: dry-run
+      limit:
+        description: "Max sites this run"
+        type: string
+        default: "20"
+
+jobs:
+  outreach:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies + Chromium
+        run: |
+          pip install -r requirements-browser.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Write config and leads from secrets
+        env:
+          OUTREACH_CONFIG: ${{ secrets.OUTREACH_CONFIG }}
+          LEADS_CSV: ${{ secrets.LEADS_CSV }}
+        run: |
+          printf '%s' "$OUTREACH_CONFIG" > outreach.yaml
+          printf '%s' "$LEADS_CSV" > leads.csv
+
+      - name: Run formscout submit
+        run: |
+          DRY=""
+          if [ "${{ inputs.mode }}" = "dry-run" ]; then DRY="--dry-run"; fi
+          python -m formscout submit leads.csv --config outreach.yaml $DRY --limit "${{ inputs.limit }}" -o results.csv
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outreach-results
+          path: results.csv
