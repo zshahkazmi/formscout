@@ -38,12 +38,13 @@ Requires Playwright + Chromium:
 from __future__ import annotations
 
 import csv
+import os
 import sys
 import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 # ---------------------------------------------------------------------------
 # Outcomes (kept identical to the labels a human operator would log)
@@ -84,6 +85,7 @@ class OutreachConfig:
     delay_seconds: float = 20.0
     timeout_seconds: float = 30.0
     headful: bool = False
+    proxy: str = ""           # e.g. http://host:3128; env proxy used if unset
 
     def message_for(self, business_name: str) -> str:
         return self.message.replace("{business_name}", business_name)
@@ -571,6 +573,28 @@ def submit_one(page, lead: Lead, cfg: OutreachConfig, dry_run: bool) -> SubmitRe
     return res
 
 
+def _env_proxy() -> dict | None:
+    """Build a Playwright proxy dict from the standard *_PROXY env vars,
+    so the engine works behind corporate/sandbox egress proxies."""
+    raw = (os.environ.get("https_proxy") or os.environ.get("HTTPS_PROXY")
+           or os.environ.get("all_proxy") or os.environ.get("ALL_PROXY") or "")
+    if not raw:
+        return None
+    u = urlparse(raw)
+    if not u.hostname:
+        return None
+    server = f"{u.scheme or 'http'}://{u.hostname}" + (f":{u.port}" if u.port else "")
+    proxy: dict = {"server": server}
+    if u.username:
+        proxy["username"] = unquote(u.username)
+    if u.password:
+        proxy["password"] = unquote(u.password)
+    bypass = os.environ.get("no_proxy") or os.environ.get("NO_PROXY")
+    if bypass:
+        proxy["bypass"] = bypass
+    return proxy
+
+
 def run_batch(leads: list[Lead], cfg: OutreachConfig, dry_run: bool = False,
               limit: int | None = None, done_domains: set[str] | None = None,
               progress=None) -> list[SubmitResult]:
@@ -592,7 +616,11 @@ def run_batch(leads: list[Lead], cfg: OutreachConfig, dry_run: bool = False,
     if limit:
         todo = todo[:limit]
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=not cfg.headful)
+        launch_kwargs: dict = {"headless": not cfg.headful}
+        proxy = {"server": cfg.proxy} if cfg.proxy else _env_proxy()
+        if proxy:
+            launch_kwargs["proxy"] = proxy
+        browser = pw.chromium.launch(**launch_kwargs)
         for i, lead in enumerate(todo, 1):
             page = browser.new_page()
             try:

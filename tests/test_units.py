@@ -51,3 +51,24 @@ class TestResume(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestEnvProxy(unittest.TestCase):
+    def test_parses_credentialed_proxy(self):
+        import os
+        from unittest.mock import patch
+        from formscout.submit import _env_proxy
+        env = {"https_proxy": "http://user:p%40ss@proxy.local:3128",
+               "no_proxy": "localhost,127.0.0.1"}
+        with patch.dict(os.environ, env, clear=True):
+            p = _env_proxy()
+        self.assertEqual(p["server"], "http://proxy.local:3128")
+        self.assertEqual(p["username"], "user")
+        self.assertEqual(p["password"], "p@ss")
+        self.assertEqual(p["bypass"], "localhost,127.0.0.1")
+
+    def test_no_proxy_env(self):
+        import os
+        from unittest.mock import patch
+        from formscout.submit import _env_proxy
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertIsNone(_env_proxy())
