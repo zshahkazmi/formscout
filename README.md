@@ -60,3 +60,44 @@ This tool fetches public pages the way a visitor would, a handful at a time. Don
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Submit mode — send the outreach too
+
+`formscout submit` drives a real (headless) Chromium via Playwright: it
+finds each site's general contact form, fills it with your identity and
+message from a config file, and submits it — at most one form per
+domain — logging an outcome per site.
+
+```bash
+pip install -r requirements-browser.txt
+python -m playwright install chromium
+
+cp examples/outreach.example.yaml outreach.yaml   # fill in your details
+python -m formscout submit leads.csv --config outreach.yaml --dry-run   # fill only, verify
+python -m formscout submit leads.csv --config outreach.yaml -o results.csv
+python -m formscout submit leads.csv --config outreach.yaml --resume results.csv  # continue later
+```
+
+Leads CSV columns: `name, website, postcode` (postcode optional — used
+only when a form requires one; it is never invented).
+
+Outcomes per site: `sent` (confirmation shown), `uncertain` (submitted,
+no confirmation — never retried), `captcha_review` (a CAPTCHA guards
+the form — flagged for a human), `no_form`, `site_down`, `blocked_waf`,
+`blocked_ip`, `blocked_botwall`, `form_error` (with the reason, e.g. a
+mandatory field with no honest value).
+
+### House rules, built in
+
+- **CAPTCHAs are never solved.** Sites behind one are flagged for
+  manual review. (A form's own arithmetic question — "What is 5 + 6?" —
+  is answered; that's a form field, not a third-party challenge.)
+- Newsletter/marketing opt-ins are never ticked; only mandatory
+  privacy-consent boxes are. A mandatory marketing Yes/No is "No".
+- Phone is entered only when the field is mandatory.
+- One form per domain, polite delay between sites, resumable runs.
+- `--dry-run` fills everything and submits nothing, so you can verify
+  accuracy before a live run.
+
+Etiquette: only message businesses through forms they publish for
+contact, send something genuinely relevant, and honour opt-outs.

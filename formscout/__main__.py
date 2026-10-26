@@ -40,6 +40,11 @@ def read_domains(path: Path) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "submit":
+        from .submit import run_cli
+
+        return run_cli(argv[1:])
     ap = argparse.ArgumentParser(
         prog="formscout",
         description="Find contact pages and forms across a list of domains.",

@@ -1,0 +1,5 @@
+# Extra dependencies for `formscout submit` (the browser engine).
+# Includes the base discovery requirements so this file installs standalone.
+-r requirements.txt
+playwright>=1.40
+pyyaml>=6.0

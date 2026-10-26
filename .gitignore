@@ -6,3 +6,7 @@ venv/
 dist/
 build/
 formscout-results.csv
+# Local outreach runs: configs carry real contact details, results are data.
+outreach.yaml
+outreach.json
+formscout-outreach.csv

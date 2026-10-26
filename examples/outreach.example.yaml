@@ -1,0 +1,18 @@
+# Example outreach config for `formscout submit`.
+# Copy to outreach.yaml and fill in YOUR details. Never commit real
+# phone numbers to a public repo.
+name: "Your Name"
+email: "you@example.com"
+company: "Your Company"
+website: "https://example.com"
+phone: "+10000000000"        # only used when a form REQUIRES a phone
+phone_uk: "+44 0000000000"   # fallback if a form forces a UK number
+subject: "A quick offer for your business"
+message: |
+  Hi {business_name} team,
+  I'm writing from Your Company with a short offer.
+  Replace this with your real outreach message — {business_name} is
+  substituted per lead.
+  Best regards, Your Name
+delay_seconds: 20            # polite pause between sites
+timeout_seconds: 30
