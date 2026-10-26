@@ -101,3 +101,19 @@ mandatory field with no honest value).
 
 Etiquette: only message businesses through forms they publish for
 contact, send something genuinely relevant, and honour opt-outs.
+
+#### Or run it on GitHub Actions (nothing to install)
+
+This repo ships an **Outreach run** workflow (`.github/workflows/outreach.yml`):
+
+1. Repo **Settings → Secrets and variables → Actions → New repository secret**:
+   - `OUTREACH_CONFIG` — the full contents of your `outreach.yaml`
+   - `LEADS_CSV` — the full contents of your leads CSV
+2. **Actions tab → Outreach run → Run workflow** — pick `dry-run` or
+   `live`, set the limit, run.
+3. Download the `outreach-results` artifact from the finished run for
+   your results CSV.
+
+Note: Actions runners use datacenter IPs, so expect more
+`blocked_botwall` / `captcha_review` outcomes than from a home
+connection.
